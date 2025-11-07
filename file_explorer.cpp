@@ -9,15 +9,16 @@
 #include <iomanip>
 #include <sstream>
 #include <fstream>
+using namespace std;
 
-namespace fs = std::filesystem;
+namespace fs = filesystem;
 
 void print_header() {
-    std::cout << "=== Simple Linux File Explorer (C++ / Console) ===\n";
+    cout << "=== Simple Linux File Explorer (C++ / Console) ===\n";
 }
 
-std::string perms_to_string(fs::perms p) {
-    std::string s = "----------";
+string perms_to_string(fs::perms p) {
+    string s = "----------";
     auto set = [&](fs::perms bit, int idx, char c){
         if ((p & bit) != fs::perms::none) s[idx] = c;
     };
@@ -35,29 +36,29 @@ std::string perms_to_string(fs::perms p) {
 
 void list_directory(const fs::path &p) {
     try {
-        std::cout << "Listing: " << p << "\n";
-        std::cout << std::left << std::setw(40) << "Name" 
-                  << std::setw(12) << "Type"
-                  << std::setw(12) << "Size"
-                  << std::setw(12) << "Perms" << "\n";
-        std::cout << std::string(80,'-') << "\n";
+        cout << "Listing: " << p << "\n";
+        cout << left << setw(40) << "Name" 
+             << setw(12) << "Type"
+             << setw(12) << "Size"
+             << setw(12) << "Perms" << "\n";
+        cout << string(80,'-') << "\n";
         for (auto &entry : fs::directory_iterator(p)) {
             auto name = entry.path().filename().string();
-            std::string type = entry.is_directory() ? "Directory" : "File";
-            std::uintmax_t size = 0;
+            string type = entry.is_directory() ? "Directory" : "File";
+            uintmax_t size = 0;
             try { if (fs::is_regular_file(entry.path())) size = fs::file_size(entry.path()); } catch(...) {}
-            std::string perms = perms_to_string(entry.status().permissions());
-            std::cout << std::left << std::setw(40) << name 
-                      << std::setw(12) << type
-                      << std::setw(12) << (entry.is_directory() ? "-" : std::to_string(size))
-                      << std::setw(12) << perms << "\n";
+            string perms = perms_to_string(entry.status().permissions());
+            cout << left << setw(40) << name 
+                 << setw(12) << type
+                 << setw(12) << (entry.is_directory() ? "-" : to_string(size))
+                 << setw(12) << perms << "\n";
         }
     } catch (fs::filesystem_error &e) {
-        std::cerr << "Error listing directory: " << e.what() << "\n";
+        cerr << "Error listing directory: " << e.what() << "\n";
     }
 }
 
-bool change_directory(fs::path &current, const std::string &target) {
+bool change_directory(fs::path &current, const string &target) {
     fs::path newp;
     if (target == "..") newp = current.parent_path();
     else if (fs::path(target).is_absolute()) newp = fs::path(target);
@@ -68,46 +69,46 @@ bool change_directory(fs::path &current, const std::string &target) {
             current = fs::canonical(newp);
             return true;
         } else {
-            std::cerr << "Directory not found: " << newp << "\n";
+            cerr << "Directory not found: " << newp << "\n";
             return false;
         }
     } catch (fs::filesystem_error &e) {
-        std::cerr << "Error changing directory: " << e.what() << "\n";
+        cerr << "Error changing directory: " << e.what() << "\n";
         return false;
     }
 }
 
-bool create_file(const fs::path &current, const std::string &name) {
+bool create_file(const fs::path &current, const string &name) {
     fs::path p = current / name;
     try {
-        std::ofstream ofs(p);
+        ofstream ofs(p);
         if (!ofs) {
-            std::cerr << "Failed to create file: " << p << "\n";
+            cerr << "Failed to create file: " << p << "\n";
             return false;
         }
         ofs.close();
         return true;
     } catch (...) {
-        std::cerr << "Error creating file.\n";
+        cerr << "Error creating file.\n";
         return false;
     }
 }
 
-bool create_directory(const fs::path &current, const std::string &name) {
+bool create_directory(const fs::path &current, const string &name) {
     try {
         fs::path p = current / name;
         if (fs::create_directory(p)) return true;
-        else { std::cerr << "Failed to create directory or already exists.\n"; return false; }
+        else { cerr << "Failed to create directory or already exists.\n"; return false; }
     } catch (fs::filesystem_error &e) {
-        std::cerr << "Error creating directory: " << e.what() << "\n";
+        cerr << "Error creating directory: " << e.what() << "\n";
         return false;
     }
 }
 
-bool delete_path(const fs::path &current, const std::string &name) {
+bool delete_path(const fs::path &current, const string &name) {
     try {
         fs::path p = current / name;
-        if (!fs::exists(p)) { std::cerr << "Path not found: " << p << "\n"; return false; }
+        if (!fs::exists(p)) { cerr << "Path not found: " << p << "\n"; return false; }
         if (fs::is_directory(p)) {
             fs::remove_all(p);
         } else {
@@ -115,16 +116,16 @@ bool delete_path(const fs::path &current, const std::string &name) {
         }
         return true;
     } catch (fs::filesystem_error &e) {
-        std::cerr << "Error deleting path: " << e.what() << "\n";
+        cerr << "Error deleting path: " << e.what() << "\n";
         return false;
     }
 }
 
-bool copy_path(const fs::path &current, const std::string &src_name, const std::string &dest_name) {
+bool copy_path(const fs::path &current, const string &src_name, const string &dest_name) {
     try {
         fs::path src = current / src_name;
         fs::path dest = current / dest_name;
-        if (!fs::exists(src)) { std::cerr << "Source not found: " << src << "\n"; return false; }
+        if (!fs::exists(src)) { cerr << "Source not found: " << src << "\n"; return false; }
         if (fs::is_directory(src)) {
             fs::copy(src, dest, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
         } else {
@@ -132,33 +133,33 @@ bool copy_path(const fs::path &current, const std::string &src_name, const std::
         }
         return true;
     } catch (fs::filesystem_error &e) {
-        std::cerr << "Error copying: " << e.what() << "\n";
+        cerr << "Error copying: " << e.what() << "\n";
         return false;
     }
 }
 
-bool move_path(const fs::path &current, const std::string &src_name, const std::string &dest_name) {
+bool move_path(const fs::path &current, const string &src_name, const string &dest_name) {
     try {
         fs::path src = current / src_name;
         fs::path dest = current / dest_name;
-        if (!fs::exists(src)) { std::cerr << "Source not found: " << src << "\n"; return false; }
+        if (!fs::exists(src)) { cerr << "Source not found: " << src << "\n"; return false; }
         fs::rename(src, dest);
         return true;
     } catch (fs::filesystem_error &e) {
-        std::cerr << "Error moving/renaming: " << e.what() << "\n";
+        cerr << "Error moving/renaming: " << e.what() << "\n";
         return false;
     }
 }
 
-void search_recursive(const fs::path &current, const std::string &query) {
+void search_recursive(const fs::path &current, const string &query) {
     try {
         for (auto &entry : fs::recursive_directory_iterator(current)) {
-            if (entry.path().filename().string().find(query) != std::string::npos) {
-                std::cout << entry.path() << "\n";
+            if (entry.path().filename().string().find(query) != string::npos) {
+                cout << entry.path() << "\n";
             }
         }
     } catch (fs::filesystem_error &e) {
-        std::cerr << "Search error: " << e.what() << "\n";
+        cerr << "Search error: " << e.what() << "\n";
     }
 }
 
@@ -178,45 +179,45 @@ fs::perms octal_to_perms(int octal) {
     return p;
 }
 
-void show_permissions(const fs::path &current, const std::string &name) {
+void show_permissions(const fs::path &current, const string &name) {
     fs::path p = current / name;
     try {
-        if (!fs::exists(p)) { std::cerr << "Not found: " << p << "\n"; return; }
+        if (!fs::exists(p)) { cerr << "Not found: " << p << "\n"; return; }
         auto st = fs::status(p);
-        std::cout << "Permissions: " << perms_to_string(st.permissions()) << "\n";
+        cout << "Permissions: " << perms_to_string(st.permissions()) << "\n";
     } catch (fs::filesystem_error &e) {
-        std::cerr << "Error reading permissions: " << e.what() << "\n";
+        cerr << "Error reading permissions: " << e.what() << "\n";
     }
 }
 
-bool change_permissions(const fs::path &current, const std::string &name, int octal) {
+bool change_permissions(const fs::path &current, const string &name, int octal) {
     try {
         fs::path p = current / name;
-        if (!fs::exists(p)) { std::cerr << "Not found: " << p << "\n"; return false; }
+        if (!fs::exists(p)) { cerr << "Not found: " << p << "\n"; return false; }
         fs::perms newp = octal_to_perms(octal);
         fs::permissions(p, newp, fs::perm_options::replace);
         return true;
     } catch (fs::filesystem_error &e) {
-        std::cerr << "Error changing permissions: " << e.what() << "\n";
+        cerr << "Error changing permissions: " << e.what() << "\n";
         return false;
     }
 }
 
 void print_help() {
-    std::cout << "Commands:\n"
-              << " ls                     - list current directory\n"
-              << " pwd                    - show current directory\n"
-              << " cd <dir>               - change directory (use .. to go up)\n"
-              << " touch <file>           - create empty file\n"
-              << " mkdir <dir>            - create directory\n"
-              << " rm <name>              - delete file or directory (recursive)\n"
-              << " cp <src> <dest>        - copy file or directory\n"
-              << " mv <src> <dest>        - move or rename\n"
-              << " find <name>            - search recursively\n"
-              << " perms <name>           - show permissions\n"
-              << " chmod <name> <octal>   - change permissions (e.g., 755)\n"
-              << " help                   - show help\n"
-              << " exit                   - exit program\n";
+    cout << "Commands:\n"
+         << " ls                     - list current directory\n"
+         << " pwd                    - show current directory\n"
+         << " cd <dir>               - change directory (use .. to go up)\n"
+         << " touch <file>           - create empty file\n"
+         << " mkdir <dir>            - create directory\n"
+         << " rm <name>              - delete file or directory (recursive)\n"
+         << " cp <src> <dest>        - copy file or directory\n"
+         << " mv <src> <dest>        - move or rename\n"
+         << " find <name>            - search recursively\n"
+         << " perms <name>           - show permissions\n"
+         << " chmod <name> <octal>   - change permissions (e.g., 755)\n"
+         << " help                   - show help\n"
+         << " exit                   - exit program\n";
 }
 
 int main(){
@@ -225,31 +226,31 @@ int main(){
     print_help();
 
     while (true) {
-        std::cout << "\n[" << current << "] $ ";
-        std::string line;
-        if (!std::getline(std::cin, line)) break;
+        cout << "\n[" << current << "] $ ";
+        string line;
+        if (!getline(cin, line)) break;
         if (line.empty()) continue;
-        std::istringstream iss(line);
-        std::string cmd;
+        istringstream iss(line);
+        string cmd;
         iss >> cmd;
 
         if (cmd == "ls") list_directory(current);
-        else if (cmd == "pwd") std::cout << current << "\n";
-        else if (cmd == "cd") { std::string d; iss >> d; change_directory(current, d); }
-        else if (cmd == "touch") { std::string f; iss >> f; create_file(current, f); }
-        else if (cmd == "mkdir") { std::string d; iss >> d; create_directory(current, d); }
-        else if (cmd == "rm") { std::string n; iss >> n; delete_path(current, n); }
-        else if (cmd == "cp") { std::string s,d; iss >> s >> d; copy_path(current, s, d); }
-        else if (cmd == "mv") { std::string s,d; iss >> s >> d; move_path(current, s, d); }
-        else if (cmd == "find") { std::string q; iss >> q; search_recursive(current, q); }
-        else if (cmd == "perms") { std::string n; iss >> n; show_permissions(current, n); }
-        else if (cmd == "chmod") { std::string n; int o; iss >> n >> o; change_permissions(current, n, o); }
+        else if (cmd == "pwd") cout << current << "\n";
+        else if (cmd == "cd") { string d; iss >> d; change_directory(current, d); }
+        else if (cmd == "touch") { string f; iss >> f; create_file(current, f); }
+        else if (cmd == "mkdir") { string d; iss >> d; create_directory(current, d); }
+        else if (cmd == "rm") { string n; iss >> n; delete_path(current, n); }
+        else if (cmd == "cp") { string s,d; iss >> s >> d; copy_path(current, s, d); }
+        else if (cmd == "mv") { string s,d; iss >> s >> d; move_path(current, s, d); }
+        else if (cmd == "find") { string q; iss >> q; search_recursive(current, q); }
+        else if (cmd == "perms") { string n; iss >> n; show_permissions(current, n); }
+        else if (cmd == "chmod") { string n; int o; iss >> n >> o; change_permissions(current, n, o); }
         else if (cmd == "help") print_help();
         else if (cmd == "exit") break;
-        else std::cout << "Unknown command. Type 'help'.\n";
+        else cout << "Unknown command. Type 'help'.\n";
     }
 
-    std::cout << "Bye.\n";
+    cout << "Bye.\n";
     return 0;
 }
 
